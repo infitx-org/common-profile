@@ -1,0 +1,12 @@
+common_platform_db:
+  provider: rds
+  external_resource_config:
+    ca_bundle_url: https://truststore.pki.rds.amazonaws.com/${cloud_region}/${cloud_region}-bundle.pem
+common_mojaloop_db:
+  provider: rds
+  external_resource_config:
+    ca_bundle_url: https://truststore.pki.rds.amazonaws.com/${cloud_region}/${cloud_region}-bundle.pem
+common_mongodb:
+  provider: documentdb
+  external_resource_config:
+    ca_bundle_url: https://truststore.pki.rds.amazonaws.com/${cloud_region}/${cloud_region}-bundle.pem

@@ -1,0 +1,14 @@
+api:
+  pingPongServerUrl: http://moja-ml-participant-connection-test-svc.mojaloop.svc.cluster.local:80/ping
+  env:
+    DFSP_WATCHER_ENABLED: true
+  image:
+    name: infitx/connection-manager-api
+    version: v2.14.2-storage-cluster.1
+
+ui:
+  image:
+    version: 1.8.4
+
+migrations:
+  deletePolicy: BeforeHookCreation

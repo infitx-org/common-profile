@@ -1,0 +1,109 @@
+global:
+  reportingDB:
+    ssl:
+      enabled: true
+      verify: false
+      caSecret:
+        name: global-ca-bundle
+        key: ca-bundle.crt
+  reportingEventsDB:
+    params:
+      tls: true
+      authMechanism: SCRAM-SHA-1
+      retryWrites: false
+      tlsAllowInvalidHostnames: true
+    ssl:
+      enabled: true
+      verify: true
+      caSecret:
+        name: global-ca-bundle-mongo
+        key: ca-bundle.crt
+
+_DEFINE:
+  eventSdk: &eventSdk
+    ".EVENT_SDKrc":
+      LOG: "off"
+      TRACE: "off"
+      AUDIT: kafka
+      KAFKA:
+        PRODUCER:
+          EVENT:
+            AUDIT:
+              config:
+                options: &event-options
+                  sync: true
+                  messageCharset: utf8
+                topicConf: &event-topic-conf
+                  request.required.acks: all
+                  partitioner: murmur2_random
+                rdkafkaConf: &event-rdkafka-conf
+                  compression.type: lz4
+                  metadata.broker.list: mojaloop-kafka-svc.stateful-resources.svc.cluster.local:9092
+                  client.id: producer-event-audit
+                  event_cb: true
+                  dr_cb: false
+                  socket.keepalive.enable: true
+                  queue.buffering.max.messages: 10000000
+            TRACE:
+              config:
+                options: *event-options
+                topicConf: *event-topic-conf
+                rdkafkaConf:
+                  <<: *event-rdkafka-conf
+                  client.id: producer-event-trace
+            LOG:
+              config:
+                options: *event-options
+                topicConf: *event-topic-conf
+                rdkafkaConf:
+                  <<: *event-rdkafka-conf
+                  client.id: producer-event-log
+
+reporting-nifi-processor-svc:
+  resources:
+    limits:
+      cpu: 1
+
+reporting-legacy-api:
+  auth: false
+  image:
+    tag: v12.4.2
+
+reporting-hub-bop-experience-api-svc:
+  sidecar:
+    enabled: false
+  configOverride: *eventSdk
+  image:
+    tag: v2.0.5
+
+reporting-hub-bop-api-svc:
+  image:
+    tag: v4.3.0
+
+reporting-hub-bop-settlements-ui:
+  image:
+    tag: v0.0.30
+
+reporting-hub-bop-trx-ui:
+  image:
+    tag: v2.0.7
+
+reporting-hub-bop-role-ui:
+  image:
+    tag: v1.5.10
+
+reporting-hub-bop-positions-ui:
+  image:
+    tag: v0.0.16
+
+reporting-hub-bop-shell:
+  image:
+    tag: v2.3.5
+
+reporting-aggregator-svc:
+  image:
+    tag: v0.0.9
+
+reporting-events-processor-svc:
+  image:
+    tag: v3.5.2

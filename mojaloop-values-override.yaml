@@ -1,0 +1,266 @@
+_DEFINE:
+  tls_db: &tls_db
+    config:
+      db_ssl_enabled: true
+      db_ssl_verify: false
+      db_ssl_ca_secret:
+        name: global-ca-bundle
+        key: ca-bundle.crt
+
+  tls_mongo: &tls_mongo
+    config:
+      mongodb:
+        params:
+          tls: true
+          authMechanism: SCRAM-SHA-1
+          retryWrites: false
+          tlsAllowInvalidHostnames: true
+        ssl:
+          enabled: true
+          verify: false
+          caSecret:
+            name: global-ca-bundle-mongo
+            key: ca-bundle.crt
+
+  iso20022Transformer: &iso20022Transformer fspiopToISO20022
+  ttk_input_values_override: &TTK_INPUT_VALUES_OVERRIDE
+    API_TYPE: iso20022
+    ilpPacket: "$param_validIlpPacketV4"
+    validCondition: "$param_validConditionV4"
+    validFulfillment: "$param_validFulfillmentV4"
+
+  iso20022: &iso20022
+    api_type: iso20022
+    original_payload_storage: kafka
+    payload_cache:
+      enabled: false
+      type: redis-cluster
+      connectionConfig:
+        cluster:
+        - host: proxy-cache-redis
+          port: 6379
+
+  destLockConfig: &destLockConfig
+    enabled: true
+    lockTimeout: 10000
+    acquireTimeout: 1500
+    driftFactor: 0.01
+    retryCount: 3
+    retryDelay: 200
+    redisConfigs:
+    - type: redis-cluster
+      cluster:
+      - host: mojaloop-redis-leader-headless
+        port: 6379
+      - host: mojaloop-redis-follower-headless
+        port: 6379
+
+  eventSdk: &eventSdk
+    .EVENT_SDKrc:
+      LOG: "off"
+      TRACE: "off"
+      AUDIT: kafka
+      KAFKA:
+        PRODUCER:
+          EVENT:
+            AUDIT:
+              config:
+                options: &event-options
+                  sync: true
+                  messageCharset: utf8
+                topicConf: &event-topic-conf
+                  request.required.acks: all
+                  partitioner: murmur2_random
+                rdkafkaConf: &event-rdkafka-conf
+                  compression.type: lz4
+                  metadata.broker.list: mojaloop-kafka-svc.stateful-resources.svc.cluster.local:9092
+                  client.id: producer-event-audit
+                  event_cb: true
+                  dr_cb: false
+                  socket.keepalive.enable: true
+                  queue.buffering.max.messages: 10000000
+            TRACE:
+              config:
+                options: *event-options
+                topicConf: *event-topic-conf
+                rdkafkaConf:
+                  <<: *event-rdkafka-conf
+                  client.id: producer-event-trace
+            LOG:
+              config:
+                options: *event-options
+                topicConf: *event-topic-conf
+                rdkafkaConf:
+                  <<: *event-rdkafka-conf
+                  client.id: producer-event-log
+
+  CONTINUOUS_DEPLOYMENT:
+    account-lookup-service: &accountImage
+      image: { tag: v17.14.4 }
+    als-msisdn-oracle: &alsOracleImage
+      image: { tag: v0.0.27 }
+    central-ledger: &ledgerImage
+      image: { tag: v19.11.3 }
+    ml-api-adapter: &adapterImage
+      image: { tag: v16.6.1 }
+    ml-testing-toolkit: &toolkitBackendImage
+      image: { tag: v18.16.3 }
+    ml-testing-toolkit-ui: &toolkitFrontendImage
+      image: { tag: v16.7.4 }
+    ml-testing-toolkit-cli: &toolkitBackendCli
+      image: { tag: v1.12.2 }
+    quoting-service: &quotingImage
+      image: { tag: v17.13.8 }
+    sdk-scheme-adapter: &schemeAdapterImage
+      image: { tag: v24.15.2 }
+    transaction-requests-service: &transactionRequestsImage
+      image: { tag: v14.4.6 }
+    mojaloop-simulator: &mojaloopSimulatorImage
+      image: { tag: v15.5.0 }
+    simulator: &simulatorImage
+      image: { tag: v12.3.3 }
+    central-settlement: &settlementImage
+      image: { tag: v17.2.3 }
+
+# --- SERVICES CONFIGURATIONS ---
+
+account-lookup-service:
+  account-lookup-service:
+    <<: *tls_db
+    config: &ALS_CONFIG
+      <<: *iso20022
+      central_shared_end_point_cache: { expiresIn: 10000 }
+      central_shared_participant_cache: { expiresIn: 3000 }
+      general_cache: { expiresIn: 3000 }
+    configOverride: *eventSdk
+  account-lookup-service-admin:
+    <<: *tls_db
+    config: *ALS_CONFIG
+    configOverride: *eventSdk
+  account-lookup-service-handler-timeout:
+    enabled: true
+    config:
+      <<: *ALS_CONFIG
+      handlers:
+        TIMEOUT:
+          TIMEXP: "*/15 * * * * *"
+          DIST_LOCK: *destLockConfig
+    configOverride: *eventSdk
+
+als-msisdn-oracle: *tls_db
+
+quoting-service:
+  quoting-service:
+    <<: *tls_db
+    config: *iso20022
+    configOverride:
+      <<: *eventSdk
+      .QUOTErc:
+        SIMPLE_AUDIT: "true"
+  quoting-service-handler:
+    <<: *tls_db
+    config:
+      db_ssl_enabled: true
+      db_ssl_verify: false
+      db_ssl_ca_secret:
+        name: global-ca-bundle
+        key: ca-bundle.crt
+    configOverride: *eventSdk
+
+ml-api-adapter:
+  ml-api-adapter-service:
+    config:
+      <<: *iso20022
+      max_callback_time_lag_dilation_milliseconds: 5000
+      event_trace_vendor: ${cluster.env}
+    configOverride: *eventSdk
+  ml-api-adapter-handler-notification:
+    config: *iso20022
+    configOverride: *eventSdk
+
+centralledger:
+  centralledger-service: *tls_db
+  centralledger-handler-transfer-prepare: *tls_db
+  centralledger-handler-transfer-position: *tls_db
+  centralledger-handler-transfer-position-batch: *tls_db
+  centralledger-handler-transfer-get: *tls_db
+  centralledger-handler-transfer-fulfil: *tls_db
+  centralledger-handler-timeout:
+    config:
+      batch_processing_enabled: true
+      distLockConfig: *destLockConfig
+  centralledger-handler-admin-transfer: *tls_db
+
+centralsettlement:
+  centralsettlement-service: *tls_db
+  centralsettlement-handler-deferredsettlement: *tls_db
+  centralsettlement-handler-grosssettlement: *tls_db
+  centralsettlement-handler-rules: *tls_db
+
+ml-testing-toolkit:
+  ml-testing-toolkit-backend:
+    <<: *tls_mongo
+    extraEnvironments:
+      hub-k8s-default-environment.json:
+        options: { transformerName: *iso20022Transformer }
+        inputValues: { <<: *TTK_INPUT_VALUES_OVERRIDE }
+    service:
+      ports:
+        adminApi: { name: http }
+    config_files:
+      system_config.json:
+        TRACE_URL: https://grafana.int.${try(cluster.cc,"ccdev")}.${cluster.domain}/explore
+    image: *toolkitBackendImage
+  ml-testing-toolkit-frontend: *toolkitFrontendImage
+
+mojaloop-simulator:
+  simulators:
+    payerfsp: &mojaloopSimulatorConfig
+      config:
+        schemeAdapter: *schemeAdapterImage
+        backend: *mojaloopSimulatorImage
+    payeefsp: *mojaloopSimulatorConfig
+    testfsp1: *mojaloopSimulatorConfig
+    testfsp2: *mojaloopSimulatorConfig
+    testfsp3: *mojaloopSimulatorConfig
+    testfsp4: *mojaloopSimulatorConfig
+
+simulator: *simulatorImage
+
+transaction-requests-service: *transactionRequestsImage
+
+ml-ttk-test-setup: &ttkConfig
+  testCaseEnvironmentFile:
+    options: { transformerName: *iso20022Transformer }
+    inputValues: { <<: *TTK_INPUT_VALUES_OVERRIDE }
+ml-ttk-test-val-gp: *ttkConfig
+ml-ttk-test-setup-interscheme:
+  <<: *ttkConfig
+  job:
+    enabled: false
+    templateLabels: { sidecar.istio.io/inject: "false" }
+    generateNameEnabled: false
+    annotations:
+      argocd.argoproj.io/hook: PostSync
+      argocd.argoproj.io/sync-wave: "2"
+ml-ttk-test-val-interscheme:
+  <<: *ttkConfig
+  job:
+    enabled: false
+    templateLabels: { sidecar.istio.io/inject: "false" }
+    generateNameEnabled: false
+    annotations:
+      argocd.argoproj.io/hook: PostSync
+      argocd.argoproj.io/sync-wave: "3"
+ml-ttk-test-cleanup:
+  <<: *ttkConfig
+  job:
+    enabled: true
+    templateLabels: { sidecar.istio.io/inject: "false" }
+    generateNameEnabled: false
+    annotations:
+      argocd.argoproj.io/hook: PostSync
+      argocd.argoproj.io/sync-wave: "4"
+
+inter-scheme-proxy-adapter:
+  enabled: false

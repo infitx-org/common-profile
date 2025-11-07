@@ -1,0 +1,98 @@
+_DEFINE:
+  OTEL_INJECT: &OTEL_INJECT
+    instrumentation.opentelemetry.io/inject-nodejs: "true"
+
+account-lookup-service:
+  account-lookup-service:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "account-lookup-service"
+  account-lookup-service-admin: &annotationInject
+    podAnnotations:
+      instrumentation.opentelemetry.io/inject-nodejs: "true"
+
+als-msisdn-oracle:
+  podAnnotations:
+    <<: *OTEL_INJECT
+    instrumentation.opentelemetry.io/container-names: "als-msisdn-oracle"
+
+quoting-service:
+  quoting-service:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "quoting-service"
+  quoting-service-handler:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "quoting-service-handler"
+
+ml-api-adapter:
+  ml-api-adapter-service:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "ml-api-adapter-service"
+  ml-api-adapter-handler-notification:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "ml-api-adapter-handler-notification"
+
+centralledger:
+  centralledger-service:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "centralledger-service"
+  centralledger-handler-transfer-prepare:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "centralledger-handler-transfer-prepare"
+  centralledger-handler-transfer-position:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "centralledger-handler-transfer-position"
+  centralledger-handler-transfer-position-batch:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "centralledger-handler-transfer-position-batch"
+  centralledger-handler-transfer-get:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "centralledger-handler-transfer-get"
+  centralledger-handler-transfer-fulfil:
+    podAnnotations:
+      <<: *OTEL_INJECT
+      instrumentation.opentelemetry.io/container-names: "centralledger-handler-transfer-fulfil"
+
+transaction-requests-service: *annotationInject
+
+mojaloop-simulator:
+  simulators:
+    payerfsp:
+      config:
+        podAnnotations:
+          <<: *OTEL_INJECT
+          instrumentation.opentelemetry.io/container-names: "payerfsp-sim"
+    payeefsp:
+      config:
+        podAnnotations:
+          <<: *OTEL_INJECT
+          instrumentation.opentelemetry.io/container-names: "payeefsp-sim"
+    testfsp1:
+      config:
+        podAnnotations:
+          <<: *OTEL_INJECT
+          instrumentation.opentelemetry.io/container-names: "testfsp1-sim"
+    testfsp2:
+      config:
+        podAnnotations:
+          <<: *OTEL_INJECT
+          instrumentation.opentelemetry.io/container-names: "testfsp2-sim"
+    testfsp3:
+      config:
+        podAnnotations:
+          <<: *OTEL_INJECT
+          instrumentation.opentelemetry.io/container-names: "testfsp3-sim"
+    testfsp4:
+      config:
+        podAnnotations:
+          <<: *OTEL_INJECT
+          instrumentation.opentelemetry.io/container-names: "testfsp4-sim"

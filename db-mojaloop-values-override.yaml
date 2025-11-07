@@ -1,0 +1,29 @@
+_DEFINE:
+  db: &db
+    config:
+      db_connection_pool_min: 0
+
+account-lookup-service:
+  account-lookup-service: *db
+  account-lookup-service-admin: *db
+
+quoting-service:
+  quoting-service: *db
+  quoting-service-handler: *db
+
+centralledger:
+  centralledger-service: *db
+  centralledger-handler-transfer-prepare: *db
+  centralledger-handler-transfer-position: *db
+  centralledger-handler-transfer-position-batch: *db
+  centralledger-handler-transfer-get: *db
+  centralledger-handler-transfer-fulfil: *db
+  centralledger-handler-timeout: *db
+  centralledger-handler-admin-transfer: *db
+
+centralsettlement:
+  centralsettlement-service: *db
+  centralsettlement-handler-deferredsettlement: *db
+  centralsettlement-handler-grosssettlement: *db
+  centralsettlement-handler-rules: *db
+als-msisdn-oracle: *db

@@ -1,0 +1,8 @@
+pm4mls:
+  test-${switch}-dfsp1: &test-dfsp
+    pm4ml_enabled: false
+  test-${switch}-dfsp2: *test-dfsp
+  perf-${switch}-dfsp1: *test-dfsp
+  perf-${switch}-dfsp2: *test-dfsp
+pm4mls_default:
+  pm4ml_chart_version: 10.3.5
