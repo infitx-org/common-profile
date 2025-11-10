@@ -10,7 +10,7 @@ ttk_test_currency3: XDR
 ttk_gp_testcase_labels: prod-tests,prod-tests-fx
 ttk_setup_testcase_labels: prod-tests,prod-tests-fx
 ttk_cleanup_testcase_labels: prod-tests,prod-tests-fx
-mcm_chart_version: 1.3.3
+# mcm_chart_version: 1.3.3
 mojaloop_chart_version: 17.1.0-22601-16443cb
 finance_portal_chart_version: 5.1.3
 reporting_templates_chart_version: 1.4.9
