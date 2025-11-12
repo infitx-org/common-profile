@@ -1,6 +1,6 @@
 _DEFINE:
   tls_db: &tls_db
-    config:
+    config: &tls_db_config
       db_ssl_enabled: true
       db_ssl_verify: false
       db_ssl_ca_secret:
@@ -23,6 +23,7 @@ _DEFINE:
             key: ca-bundle.crt
 
   iso20022Transformer: &iso20022Transformer fspiopToISO20022
+
   ttk_input_values_override: &TTK_INPUT_VALUES_OVERRIDE
     API_TYPE: iso20022
     ilpPacket: "$param_validIlpPacketV4"
@@ -133,10 +134,12 @@ account-lookup-service:
       central_shared_participant_cache: { expiresIn: 3000 }
       general_cache: { expiresIn: 3000 }
     configOverride: *eventSdk
+
   account-lookup-service-admin:
     <<: *tls_db
     config: *ALS_CONFIG
     configOverride: *eventSdk
+
   account-lookup-service-handler-timeout:
     enabled: true
     config:
@@ -185,10 +188,14 @@ centralledger:
   centralledger-handler-transfer-position-batch: *tls_db
   centralledger-handler-transfer-get: *tls_db
   centralledger-handler-transfer-fulfil: *tls_db
+
   centralledger-handler-timeout:
+    <<: *tls_db
     config:
+      <<: *tls_db_config
       batch_processing_enabled: true
       distLockConfig: *destLockConfig
+
   centralledger-handler-admin-transfer: *tls_db
 
 centralsettlement:
@@ -233,7 +240,9 @@ ml-ttk-test-setup: &ttkConfig
   testCaseEnvironmentFile:
     options: { transformerName: *iso20022Transformer }
     inputValues: { <<: *TTK_INPUT_VALUES_OVERRIDE }
+
 ml-ttk-test-val-gp: *ttkConfig
+
 ml-ttk-test-setup-interscheme:
   <<: *ttkConfig
   job:
@@ -243,6 +252,7 @@ ml-ttk-test-setup-interscheme:
     annotations:
       argocd.argoproj.io/hook: PostSync
       argocd.argoproj.io/sync-wave: "2"
+
 ml-ttk-test-val-interscheme:
   <<: *ttkConfig
   job:
@@ -252,6 +262,7 @@ ml-ttk-test-val-interscheme:
     annotations:
       argocd.argoproj.io/hook: PostSync
       argocd.argoproj.io/sync-wave: "3"
+
 ml-ttk-test-cleanup:
   <<: *ttkConfig
   job:
