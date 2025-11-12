@@ -1,5 +1,5 @@
 _DEFINE:
-  tls_db: &tls_db
+  tls_db:
     config: &tls_db_config
       db_ssl_enabled: true
       db_ssl_verify: false
@@ -127,16 +127,15 @@ _DEFINE:
 
 account-lookup-service:
   account-lookup-service:
-    <<: *tls_db
     config: &ALS_CONFIG
       <<: *iso20022
+      <<: *tls_db_config
       central_shared_end_point_cache: { expiresIn: 10000 }
       central_shared_participant_cache: { expiresIn: 3000 }
       general_cache: { expiresIn: 3000 }
     configOverride: *eventSdk
 
   account-lookup-service-admin:
-    <<: *tls_db
     config: *ALS_CONFIG
     configOverride: *eventSdk
 
@@ -150,24 +149,22 @@ account-lookup-service:
           DIST_LOCK: *destLockConfig
     configOverride: *eventSdk
 
-als-msisdn-oracle: *tls_db
+als-msisdn-oracle:
+  config:
+    <<: *tls_db_config
 
 quoting-service:
   quoting-service:
-    <<: *tls_db
-    config: *iso20022
+    config:
+      <<: *iso20022
+      <<: *tls_db_config
     configOverride:
       <<: *eventSdk
       .QUOTErc:
         SIMPLE_AUDIT: "true"
   quoting-service-handler:
-    <<: *tls_db
     config:
-      db_ssl_enabled: true
-      db_ssl_verify: false
-      db_ssl_ca_secret:
-        name: global-ca-bundle
-        key: ca-bundle.crt
+      <<: *tls_db_config
     configOverride: *eventSdk
 
 ml-api-adapter:
@@ -182,27 +179,30 @@ ml-api-adapter:
     configOverride: *eventSdk
 
 centralledger:
-  centralledger-service: *tls_db
-  centralledger-handler-transfer-prepare: *tls_db
-  centralledger-handler-transfer-position: *tls_db
-  centralledger-handler-transfer-position-batch: *tls_db
-  centralledger-handler-transfer-get: *tls_db
-  centralledger-handler-transfer-fulfil: *tls_db
+  centralledger-service: &CL_CONFIG
+    config:
+      <<: *tls_db_config
+  centralledger-handler-transfer-prepare: *CL_CONFIG
+  centralledger-handler-transfer-position: *CL_CONFIG
+  centralledger-handler-transfer-position-batch: *CL_CONFIG
+  centralledger-handler-transfer-get: *CL_CONFIG
+  centralledger-handler-transfer-fulfil: *CL_CONFIG
 
   centralledger-handler-timeout:
-    <<: *tls_db
     config:
       <<: *tls_db_config
       batch_processing_enabled: true
       distLockConfig: *destLockConfig
 
-  centralledger-handler-admin-transfer: *tls_db
+  centralledger-handler-admin-transfer: *CL_CONFIG
 
 centralsettlement:
-  centralsettlement-service: *tls_db
-  centralsettlement-handler-deferredsettlement: *tls_db
-  centralsettlement-handler-grosssettlement: *tls_db
-  centralsettlement-handler-rules: *tls_db
+  centralsettlement-service: &CS_CONFIG
+    config:
+      <<: *tls_db_config
+  centralsettlement-handler-deferredsettlement: *CS_CONFIG
+  centralsettlement-handler-grosssettlement: *CS_CONFIG
+  centralsettlement-handler-rules: *CS_CONFIG
 
 ml-testing-toolkit:
   ml-testing-toolkit-backend:
